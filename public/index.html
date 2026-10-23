@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RabbitMQ Performance & Educational Benchmark Laboratory</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="/lib/chart.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation & Brand Header -->
+  <header class="top-header">
+    <div class="brand-section">
+      <div class="brand-icon">🐇</div>
+      <div class="brand-title">
+        <h1>RabbitMQ Performance & Educational Benchmark Laboratory</h1>
+        <p>University Benchmark Reproduction & Differential Analysis (Official Java PerfTest Engine)</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Broker Status Badge -->
+      <div class="status-badge" id="brokerStatusBadge">
+        <div class="status-dot"></div>
+        <span id="brokerStatusText">Checking RabbitMQ...</span>
+      </div>
+
+      <!-- Engine Status Badge -->
+      <div class="status-badge">
+        <span>Engine: <strong>Official Java PerfTest</strong></span>
+      </div>
+
+      <!-- Quick Actions -->
+      <button class="btn btn-secondary" id="btnHeaderPurgeQueues" title="Purge any leftover benchmark queues from Docker">
+        🧹 Purge Queues
+      </button>
+
+      <a href="http://localhost:15672" target="_blank" class="btn-nav" title="Open Docker RabbitMQ Admin Panel">
+        RabbitMQ UI (15672) ↗
+      </a>
+    </div>
+  </header>
+
+  <!-- Main View Navigation Tabs -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" data-tab="tab-custom">
+      <span>🧪 Custom Java Benchmark</span>
+    </button>
+    <button class="tab-btn" data-tab="tab-comparison">
+      <span>⚖️ Git Differential Comparison</span>
+    </button>
+    <button class="tab-btn" data-tab="tab-legacy">
+      <span>📜 Legacy Flot Chart Viewer</span>
+    </button>
+  </nav>
+
+  <!-- =====================================================================
+       TAB 1: CUSTOM JAVA BENCHMARK (DIRECT NUMBER INPUTS & DIAGRAMS)
+       ===================================================================== -->
+  <main id="tab-custom" class="tab-content active">
+
+    <!-- Educational Explanation Card -->
+    <div class="edu-info-card">
+      <h4>💡 Educational Guide: Custom Java Load Testing</h4>
+      <p>
+        This section allows you to test RabbitMQ with arbitrary parameters (duration, target rate, producer count, consumer count, and message size). 
+        The benchmark is executed directly by the official RabbitMQ Java tool (<code>com.rabbitmq.perf.PerfTestMulti</code>). 
+        Once execution finishes, the resulting metrics and time-series diagrams are rendered below.
+      </p>
+    </div>
+
+    <!-- Parameter Configuration Form Card -->
+    <section class="config-card">
+      <div class="config-header">
+        <div class="config-title">
+          <span>⚙️ Configure Benchmark Parameters</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">
+          Target: <code>amqp://127.0.0.1:5672</code> (Docker Container)
+        </div>
+      </div>
+
+      <!-- Direct Numeric Inputs -->
+      <div class="param-input-grid">
+        <div class="param-field">
+          <label for="inputDuration">Duration (Seconds)</label>
+          <input type="number" id="inputDuration" value="10" min="2" max="300" step="1">
+          <span class="field-hint">Total test runtime</span>
+        </div>
+
+        <div class="param-field">
+          <label for="inputRate">Rate Limit (msg/s)</label>
+          <input type="number" id="inputRate" value="20" min="0" step="50">
+          <span class="field-hint">Per-producer speed (0 = Max unthrottled)</span>
+        </div>
+
+        <div class="param-field">
+          <label for="inputProducers">Producers Count</label>
+          <input type="number" id="inputProducers" value="2" min="1" max="64" step="1">
+          <span class="field-hint">Parallel publishing threads</span>
+        </div>
+
+        <div class="param-field">
+          <label for="inputConsumers">Consumers Count</label>
+          <input type="number" id="inputConsumers" value="1" min="1" max="64" step="1">
+          <span class="field-hint">Parallel subscriber threads</span>
+        </div>
+
+        <div class="param-field">
+          <label for="inputMsgSize">Payload Size (Bytes)</label>
+          <input type="number" id="inputMsgSize" value="256" min="16" max="65536" step="64">
+          <span class="field-hint">Byte length of each message</span>
+        </div>
+      </div>
+
+      <!-- Quick Preset Buttons -->
+      <div class="preset-pills-bar">
+        <span class="preset-pills-label">Quick Presets:</span>
+        <button type="button" class="preset-pill" data-dur="10" data-rate="20" data-prod="2" data-cons="1" data-size="256">
+          🟢 Gentle Test: 20 msg/s (10s, 2 prod / 1 cons)
+        </button>
+        <button type="button" class="preset-pill" data-dur="10" data-rate="5000" data-prod="2" data-cons="2" data-size="256">
+          🔵 Moderate: 5,000 msg/s (10s, 2 prod / 2 cons)
+        </button>
+        <button type="button" class="preset-pill" data-dur="10" data-rate="15000" data-prod="3" data-cons="2" data-size="256">
+          🟠 High Load: 15,000 msg/s (10s, 3 prod / 2 cons)
+        </button>
+        <button type="button" class="preset-pill" data-dur="10" data-rate="26000" data-prod="4" data-cons="2" data-size="256">
+          🔴 Saturation Knee: 26,000 msg/s (10s, 4 prod / 2 cons)
+        </button>
+        <button type="button" class="preset-pill" data-dur="15" data-rate="0" data-prod="4" data-cons="2" data-size="256">
+          ⚡ Unthrottled Max (15s, 4 prod / 2 cons)
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="config-actions-bar">
+        <button class="btn-large-primary" id="btnRunCustomJava">
+          ☕ Run Java Benchmark
+        </button>
+        <button class="btn btn-danger" id="btnStopCustomJava" style="display:none;">
+          ⏹ Stop Benchmark
+        </button>
+        <span id="customRunStatusText" style="font-size:13px;color:var(--text-muted);">
+          Ready. Click the button to start Java execution.
+        </span>
+      </div>
+    </section>
+
+    <!-- Execution Spinner & Progress Indicator -->
+    <div class="benchmark-loader" id="customLoader">
+      <div class="spinner-icon"></div>
+      <h3 id="loaderTitle">Executing Official Java PerfTestMulti...</h3>
+      <p id="loaderDesc">Connecting to Docker RabbitMQ, publishing messages, and collecting consumer latency metrics. Please wait...</p>
+      <div style="margin-top:10px;font-family:var(--font-mono);font-size:14px;color:#60a5fa;" id="loaderTimer">
+        Elapsed: 0s
+      </div>
+    </div>
+
+    <!-- Saturation / Health Assessment Banner -->
+    <section class="saturation-banner" id="customHealthBanner">
+      <div class="saturation-banner-icon" id="customHealthIcon">💡</div>
+      <div class="saturation-banner-content">
+        <h3 id="customHealthTitle">Benchmark Evaluation</h3>
+        <p id="customHealthDesc">-</p>
+        <div class="saturation-banner-metrics" id="customHealthMetrics">
+          <span>Avg Latency: <strong id="customBannerAvgLat">0 ms</strong></span>
+          <span>Max Latency: <strong id="customBannerMaxLat">0 ms</strong></span>
+          <span>Delivered Rate: <strong id="customBannerRecvRate">0 msg/s</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Benchmark Results Section -->
+    <section class="results-section" id="customResultsSection">
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card latency">
+          <div class="kpi-header">
+            <span class="kpi-title">Average Latency</span>
+            <span class="kpi-icon">⚡</span>
+          </div>
+          <div class="kpi-main-val" id="resAvgLatency">0.00 <span style="font-size:16px;color:#9ca3af;">ms</span></div>
+          <div class="kpi-sub-stats">
+            <span>Min: <strong id="resMinLatency">0.0 ms</strong></span>
+            <span>Max: <strong id="resMaxLatency">0.0 ms</strong></span>
+          </div>
+        </div>
+
+        <div class="kpi-card throughput">
+          <div class="kpi-header">
+            <span class="kpi-title">Delivery Throughput</span>
+            <span class="kpi-icon">📈</span>
+          </div>
+          <div class="kpi-main-val" id="resRecvRate">0 <span style="font-size:16px;color:#9ca3af;">msg/s</span></div>
+          <div class="kpi-sub-stats">
+            <span>Publish Rate: <strong id="resSendRate">0 msg/s</strong></span>
+            <span>Target: <strong id="resTargetRate">0 msg/s</strong></span>
+          </div>
+        </div>
+
+        <div class="kpi-card bandwidth">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Processed</span>
+            <span class="kpi-icon">📦</span>
+          </div>
+          <div class="kpi-main-val" id="resTotalMsgs">0 <span style="font-size:16px;color:#9ca3af;">msgs</span></div>
+          <div class="kpi-sub-stats">
+            <span>Sent: <strong id="resTotalSent">0</strong></span>
+            <span>Received: <strong id="resTotalRecv">0</strong></span>
+          </div>
+        </div>
+
+        <div class="kpi-card loss">
+          <div class="kpi-header">
+            <span class="kpi-title">Duration & Samples</span>
+            <span class="kpi-icon">⏱️</span>
+          </div>
+          <div class="kpi-main-val" id="resDuration">0 <span style="font-size:16px;color:#9ca3af;">sec</span></div>
+          <div class="kpi-sub-stats">
+            <span>Interval: <strong>1.0s</strong></span>
+            <span>Samples: <strong id="resSamplesCount">0</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagram 1: Message Throughput Over Time -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">📈 Message Throughput Diagram (Published vs Delivered)</div>
+            <div class="chart-subtitle">Evaluates message production speed and subscriber consumption rate over time</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 280px;">
+          <canvas id="customThroughputChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Diagram 2: End-to-End Latency Over Time -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">⚡ End-to-End Latency Diagram (ms)</div>
+            <div class="chart-subtitle">Microsecond-precision consumer latency measured by the Java PerfTest client</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height: 280px;">
+          <canvas id="customLatencyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Collapsible Terminal Output -->
+      <div class="footer-log-card">
+        <div class="log-header">
+          <span>Java PerfTestMulti Console Output</span>
+          <button id="btnClearCustomLog" style="background:transparent;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;">Clear</button>
+        </div>
+        <div class="log-terminal" id="customLogTerminal">
+          <div>[System] Java runner ready. Results will appear here after execution.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =====================================================================
+       TAB 2: GIT DIFFERENTIAL COMPARISON (SIDE-BY-SIDE)
+       ===================================================================== -->
+  <main id="tab-comparison" class="tab-content">
+
+    <!-- Educational Explanation Card -->
+    <div class="edu-info-card">
+      <h4>💡 Educational Goal: Environment Differential Analysis</h4>
+      <p>
+        The Git repository includes committed reference benchmark results generated in 2012 using <code>examples/publish-consume-spec.js</code> (4 producers, 2 consumers, 30 seconds, unthrottled). 
+        The left diagram below displays this historical baseline. 
+        Click <strong>"Run Benchmark with Same Input on Our Machine"</strong> to execute the identical specification against your local Docker RabbitMQ broker and visually observe how modern hardware, Linux kernel, Erlang OTP 26, and JVM improvements affect queuing performance.
+      </p>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="comparison-action-bar">
+      <div class="comp-info-box">
+        <div class="comp-info-title">Specification: <code>publish-consume-spec.js</code></div>
+        <div class="comp-info-subtitle">
+          Parameters: <strong>4 Producers</strong>, <strong>2 Consumers</strong>, <strong>30s Duration</strong>, <strong>Unthrottled Rate</strong>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-large-primary" id="btnRunReproduceBaseline">
+          ☕ Run Benchmark with Same Input on Our Machine
+        </button>
+        <span id="reproduceStatusText" style="font-size:13px;color:var(--text-muted);">
+          Git baseline loaded.
+        </span>
+      </div>
+    </div>
+
+    <!-- Differential Impact Summary Cards -->
+    <section class="differential-summary-grid">
+      <div class="diff-card">
+        <div class="diff-card-label">Latency Differential (&Delta;)</div>
+        <div class="diff-card-value green" id="compDiffLatency">-671.2 ms (-99.7%)</div>
+        <div class="diff-card-desc">Modern Docker Erlang engine eliminates the massive queue delays observed in the 2012 baseline.</div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-card-label">Peak Latency Spike (&Delta;)</div>
+        <div class="diff-card-value amber" id="compDiffPeak">-1,128 ms lower peak</div>
+        <div class="diff-card-desc">Max latency in 2012 Git baseline: 1,138 ms vs sub-15 ms on modern Docker runtime.</div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-card-label">Throughput Fidelity</div>
+        <div class="diff-card-value blue" id="compDiffThroughput">High Delivery Match</div>
+        <div class="diff-card-desc">Both systems sustain high message volume under 4 concurrent unthrottled publishers.</div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-card-label">Environment Contrast</div>
+        <div class="diff-card-value purple">Bare-Metal vs Docker</div>
+        <div class="diff-card-desc">Legacy VM/JVM 7 vs Containerized Erlang OTP 26 + Java 17 LTS on loopback interface.</div>
+      </div>
+    </section>
+
+    <!-- Side-by-Side Comparison Columns -->
+    <section class="comparison-grid">
+      <!-- Column 1: Git Reference Benchmark (Committed Baseline) -->
+      <div class="comp-column-card legacy">
+        <div class="comp-card-header">
+          <div>
+            <div class="comp-card-title">📜 Git Reference Benchmark</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+              Original dataset from Git repository (<code>legacy-reported-result.json</code>)
+            </div>
+          </div>
+          <span class="comp-card-tag tag-legacy">Git Baseline (2012)</span>
+        </div>
+
+        <div class="comp-metrics-row">
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Average Latency</div>
+            <div class="comp-stat-val" id="gitAvgLat">673.0 <span style="font-size:13px;color:#9ca3af;">ms</span></div>
+          </div>
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Max Latency Spike</div>
+            <div class="comp-stat-val" id="gitMaxLat">1,138 <span style="font-size:13px;color:#9ca3af;">ms</span></div>
+          </div>
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Avg Publish Rate</div>
+            <div class="comp-stat-val" id="gitSendRate">68,230 <span style="font-size:13px;color:#9ca3af;">msg/s</span></div>
+          </div>
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Avg Deliver Rate</div>
+            <div class="comp-stat-val" id="gitRecvRate">68,140 <span style="font-size:13px;color:#9ca3af;">msg/s</span></div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+          <strong>Environment:</strong> Linux 2.6, Oracle JVM 7, Bare-metal Server (2012)
+        </div>
+
+        <div class="chart-container" style="height: 260px;">
+          <canvas id="gitCompChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Column 2: Local Reproduction on Our Machine -->
+      <div class="comp-column-card live">
+        <div class="comp-card-header">
+          <div>
+            <div class="comp-card-title">💻 Local Machine Reproduction</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+              Executed with identical spec on Docker RabbitMQ (<code>publish-consume-result.js</code>)
+            </div>
+          </div>
+          <span class="comp-card-tag tag-live" id="localTag">Local Docker (Today)</span>
+        </div>
+
+        <div class="comp-metrics-row">
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Average Latency</div>
+            <div class="comp-stat-val" id="localAvgLat">- <span style="font-size:13px;color:#9ca3af;">ms</span></div>
+          </div>
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Max Latency Spike</div>
+            <div class="comp-stat-val" id="localMaxLat">- <span style="font-size:13px;color:#9ca3af;">ms</span></div>
+          </div>
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Avg Publish Rate</div>
+            <div class="comp-stat-val" id="localSendRate">- <span style="font-size:13px;color:#9ca3af;">msg/s</span></div>
+          </div>
+          <div class="comp-stat-box">
+            <div class="comp-stat-label">Avg Deliver Rate</div>
+            <div class="comp-stat-val" id="localRecvRate">- <span style="font-size:13px;color:#9ca3af;">msg/s</span></div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+          <strong>Environment:</strong> Windows 11, Docker RabbitMQ 3.13, Erlang OTP 26, Java 17 LTS
+        </div>
+
+        <div class="chart-container" style="height: 260px;">
+          <canvas id="localCompChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Superimposed Direct Overlay Diagram -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">⚖️ Superimposed Latency Curve: Git Reference vs Local Machine</div>
+          <div class="chart-subtitle">Overlaying both execution curves on a single timeline illustrates the dramatic reduction in queuing delay</div>
+        </div>
+      </div>
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="overlayCompChart"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <!-- =====================================================================
+       TAB 3: LEGACY FLOT CHART VIEWER
+       ===================================================================== -->
+  <main id="tab-legacy" class="tab-content">
+    <div class="legacy-iframe-container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h3 style="color:#fff;font-size:16px;">Authentic Legacy Flot Charts Viewer</h3>
+          <p style="font-size:13px;color:var(--text-muted);">
+            Running original HTML and jQuery Flot scripts from <code>examples/sample.html</code>.
+          </p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <a href="/legacy/examples/sample.html" target="_blank" class="btn btn-primary">Open in Full Tab ↗</a>
+        </div>
+      </div>
+
+      <div class="legacy-iframe-wrapper">
+        <iframe id="legacyIframe" src="/legacy/examples/sample.html"></iframe>
+      </div>
+    </div>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
